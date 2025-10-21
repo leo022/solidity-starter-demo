@@ -1,3 +1,9 @@
+---
+title: Crowdfunding Platform Smart Contract Tutorial
+author: TC
+date: '2025-10-16'
+---
+
 # Crowdfunding Platform Smart Contract Tutorial
 
 ## Table of Contents

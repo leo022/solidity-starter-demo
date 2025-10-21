@@ -1,3 +1,9 @@
+---
+title: Deployment & Testing Guide
+author: TC
+date: '2025-10-16'
+---
+
 # Deployment & Testing Guide
 
 ## Table of Contents

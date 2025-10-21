@@ -1,3 +1,9 @@
+---
+title: Security Enhancements Documentation
+author: TC
+date: '2025-10-16'
+---
+
 # Security Enhancements Documentation
 
 ## Overview

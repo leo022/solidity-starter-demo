@@ -1,3 +1,9 @@
+---
+title: Contract Enhancements Summary
+author: TC
+date: '2025-10-16'
+---
+
 # Contract Enhancements Summary
 
 ## Overview

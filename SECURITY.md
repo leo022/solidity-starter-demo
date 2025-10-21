@@ -1,3 +1,9 @@
+---
+title: Security Analysis:Crowdfunding Platform Smart Contract
+author: TC
+date: '2025-10-16'
+---
+
 # Security Analysis: Crowdfunding Platform Smart Contract
 
 ## Table of Contents

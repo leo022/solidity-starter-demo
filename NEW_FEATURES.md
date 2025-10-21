@@ -1,3 +1,9 @@
+---
+title: New Features Guide - Enhanced Crowdfunding Platform
+author: TC
+date: '2025-10-16'
+---
+
 # New Features Guide - Enhanced Crowdfunding Platform
 
 ## Quick Navigation

@@ -1,3 +1,9 @@
+---
+title: Solidity Starter Demo:Enhanced Crowdfunding Platform
+author: TC
+date: '2025-10-16'
+---
+
 # Solidity Starter Demo: Enhanced Crowdfunding Platform
 
 A comprehensive, production-ready smart contract project designed to teach advanced Solidity concepts through a feature-rich crowdfunding platform implementation.
