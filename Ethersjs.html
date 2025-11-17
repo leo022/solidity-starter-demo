@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ethers.js Greeter Interaction</title>
+    <!-- 1. Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Load Ethers.js (v5) from a CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"
+        xintegrity="sha512-FDcVY+gM5S3c3dIe/b/iH2kLCPTAnpILBJGS5S/jI/iM9lBfBqP/VImTjCwhCbrgE/vOBhNlE2X+1sR/LOMsow=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .lds-dual-ring {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+        }
+        .lds-dual-ring:after {
+            content: " ";
+            display: block;
+            width: 16px;
+            height: 16px;
+            margin: 2px;
+            border-radius: 50%;
+            border: 3px solid #fff;
+            border-color: #fff transparent #fff transparent;
+            animation: lds-dual-ring 1.2s linear infinite;
+        }
+        @keyframes lds-dual-ring {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white h-full font-sans flex items-center justify-center">
+
+    <div class="bg-gray-800 p-8 rounded-lg shadow-xl max-w-md w-full">
+        <h1 class="text-3xl font-bold mb-4 text-center">Greeter Contract</h1>
+        <p class="text-gray-400 mb-6 text-center">Interact with the Greeter contract on the blockchain.</p>
+
+        <!-- Connect Button & Status -->
+        <button id="connectButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+            Connect Wallet
+        </button>
+        <div id="walletStatus" class="mt-4 text-center text-sm text-green-400"></div>
+
+        <!-- Main Interaction Card -->
+        <div id="interactionCard" class="mt-6 hidden">
+            
+            <!-- Read Greeting -->
+            <div class="bg-gray-700 p-4 rounded-lg">
+                <h2 class="text-xl font-semibold mb-3">1. Read Greeting</h2>
+                <button id="readButton" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
+                    Fetch Current Greeting
+                </button>
+                <div class="mt-3 p-3 bg-gray-800 rounded-lg text-center">
+                    <span class="text-gray-400">Current Greeting:</span>
+                    <strong id="greetingDisplay" class="text-lg ml-2">...</strong>
+                </div>
+            </div>
+
+            <!-- Write Greeting -->
+            <div class="bg-gray-700 p-4 rounded-lg mt-6">
+                <h2 class="text-xl font-semibold mb-3">2. Set Greeting</h2>
+                <p class="text-sm text-gray-400 mb-3">This will cost gas and require a transaction.</p>
+                <input type="text" id="greetingInput" placeholder="Enter new greeting" class="w-full p-2 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button id="writeButton" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 mt-3 flex items-center justify-center gap-2">
+                    <span id="writeButtonText">Update Greeting</span>
+                    <div id="writeSpinner" class="lds-dual-ring hidden"></div>
+                </button>
+                <div id="txStatus" class="mt-3 text-center text-sm text-yellow-400"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Contract Details ---
+        // !! IMPORTANT !!
+        // 1. Deploy your contract (from the GitHub repo) to a testnet (e.g., Sepolia).
+        // 2. Paste the deployed contract's address here.
+        const contractAddress = "YOUR_CONTRACT_ADDRESS";
+
+        // This is the ABI for the Greeter.sol contract.
+        const contractAbi = [
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_greeting",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "inputs": [],
+                "name": "greet",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_greeting",
+                        "type": "string"
+                    }
+                ],
+                "name": "setGreeting",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            }
+        ];
+
+        // --- Global Variables ---
+        let provider;
+        let signer;
+        let contract;
+
+        // --- DOM Elements ---
+        const connectButton = document.getElementById("connectButton");
+        const walletStatus = document.getElementById("walletStatus");
+        const interactionCard = document.getElementById("interactionCard");
+        
+        const readButton = document.getElementById("readButton");
+        const greetingDisplay = document.getElementById("greetingDisplay");
+        
+        const writeButton = document.getElementById("writeButton");
+        const writeButtonText = document.getElementById("writeButtonText");
+        const writeSpinner = document.getElementById("writeSpinner");
+        const greetingInput = document.getElementById("greetingInput");
+        const txStatus = document.getElementById("txStatus");
+
+        // --- Event Listeners ---
+        connectButton.addEventListener("click", connectWallet);
+        readButton.addEventListener("click", fetchGreeting);
+        writeButton.addEventListener("click", updateGreeting);
+
+        // --- Core Functions ---
+
+        /**
+         * Connects to the user's MetaMask wallet.
+         */
+        async function connectWallet() {
+            if (typeof window.ethereum === "undefined") {
+                walletStatus.innerText = "MetaMask is not installed!";
+                walletStatus.classList.add("text-red-500");
+                return;
+            }
+
+            try {
+                // Request account access
+                await window.ethereum.request({ method: "eth_requestAccounts" });
+
+                // Initialize Ethers provider and signer
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                const address = await signer.getAddress();
+
+                // Initialize the contract
+                contract = new ethers.Contract(contractAddress, contractAbi, signer);
+
+                // Update UI
+                connectButton.innerText = "Wallet Connected";
+                connectButton.disabled = true;
+                walletStatus.innerText = `Connected: ${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+                interactionCard.classList.remove("hidden");
+
+                // Fetch the initial greeting
+                fetchGreeting();
+
+            } catch (error) {
+                console.error("Error connecting wallet:", error);
+                walletStatus.innerText = "Failed to connect wallet.";
+                walletStatus.classList.add("text-red-500");
+            }
+        }
+
+        /**
+         * Fetches the current greeting from the smart contract.
+         */
+        async function fetchGreeting() {
+            if (!contract) {
+                greetingDisplay.innerText = "Connect wallet first.";
+                return;
+            }
+
+            try {
+                greetingDisplay.innerText = "Fetching...";
+                const greeting = await contract.greet();
+                greetingDisplay.innerText = greeting;
+            } catch (error) {
+                console.error("Error fetching greeting:", error);
+                greetingDisplay.innerText = "Error!";
+            }
+        }
+
+        /**
+         * Sends a transaction to update the greeting.
+         */
+        async function updateGreeting() {
+            if (!contract) {
+                txStatus.innerText = "Connect wallet first.";
+                return;
+            }
+
+            const newGreeting = greetingInput.value;
+            if (!newGreeting) {
+                txStatus.innerText = "Please enter a new greeting.";
+                return;
+            }
+
+            // Disable button and show spinner
+            setWriteButtonLoading(true);
+            txStatus.innerText = "Sending transaction...";
+
+            try {
+                // Send the transaction
+                const tx = await contract.setGreeting(newGreeting);
+                
+                txStatus.innerText = "Waiting for confirmation...";
+                
+                // Wait for the transaction to be mined
+                await tx.wait();
+
+                txStatus.innerText = "Greeting updated successfully!";
+                txStatus.classList.remove("text-yellow-400");
+                txStatus.classList.add("text-green-400");
+                
+                // Clear input and fetch new greeting
+                greetingInput.value = "";
+                fetchGreeting();
+
+            } catch (error) {
+                console.error("Error updating greeting:", error);
+                txStatus.innerText = "Transaction failed.";
+                txStatus.classList.add("text-red-500");
+            } finally {
+                // Re-enable button
+                setWriteButtonLoading(false);
+                setTimeout(() => { 
+                    txStatus.innerText = "";
+                    txStatus.classList.remove("text-green-400", "text-red-500");
+                    txStatus.classList.add("text-yellow-400");
+                }, 3000);
+            }
+        }
+
+        function setWriteButtonLoading(isLoading) {
+            writeButton.disabled = isLoading;
+            if (isLoading) {
+                writeButtonText.classList.add("hidden");
+                writeSpinner.classList.remove("hidden");
+            } else {
+                writeButtonText.classList.remove("hidden");
+                writeSpinner.classList.add("hidden");
+            }
+        }
+    </script>
+
+</body>
+</html>
